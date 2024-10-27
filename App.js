@@ -42,9 +42,9 @@ export default function App() {
               tabBarInactiveTintColor: 'gray',
             })}
           >
-          <Tab.Screen name="ListUsers" component={ListUsers} />
-          <Tab.Screen name="ChatScreen" component={ChatScreen} />
-          <Tab.Screen name="Settings" component={SettingsScreen} />
+          <Tab.Screen name="ListUsers" component={ListUsers} options={{ title: 'Buddies' }} />
+          <Tab.Screen name="ChatScreen" component={ChatScreen} options={{ title: 'Chat' }} />
+          <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
         </Tab.Navigator>
       </NavigationContainer>
     )
