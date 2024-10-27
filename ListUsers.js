@@ -46,7 +46,13 @@ export const ListUsers = () => {
               navigation.navigate('ChatScreen', { receiver: item.email })
             }
           >
-			<Image source={{ uri: item.avatar }} style={styles.avatar} />
+
+			<Image 
+      source={{ 
+      uri: item.avatar ? item.avatar : 'https://randomuser.me/api/portraits/lego/1.jpg' 
+      }} 
+      style={styles.avatar} 
+      />
 			<Text style={styles.username}>{item.email}</Text>
           </Pressable>
 		  </View>
