@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, Alert, Pressable } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { query, where, setDoc, collection, getDocs } from 'firebase/firestore';
+import { query, where, setDoc, collection, getDocs, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, db, storage  } from './firebase';
 
@@ -21,26 +21,28 @@ const SettingsScreen = () => {
     }
   }, []);
 
-  useEffect(() => {
-    const fetchAvatar = async () => {
-      try {
-        // Create a query to find documents with the specified email
-        const q = query(collection(db, "avatars"), where("email", "==", auth.currentUser.email));
-        const querySnapshot = await getDocs(q);
-  
-        // Check if the query returned any results
-        if (!querySnapshot.empty) {
-          querySnapshot.forEach((doc) => {
+  const fetchAvatar = async () => {
+    try {
+      // Create a query to find documents with the specified email
+      const q = query(collection(db, "avatars"), where("email", "==", auth.currentUser.email));
+      const querySnapshot = await getDocs(q);
+
+      // Check if the query returned any results
+      if (!querySnapshot.empty) {
+        querySnapshot.forEach((doc) => {
+          if(doc.data().avatar) {
             setAvatar(doc.data().avatar);
-          });
-        } else {
-          console.log("No such document!");
-        }
-      } catch (error) {
-        console.error("Error getting document: ", error);
+          }
+        });
+      } else {
+        console.log("No such document!");
       }
-    };
-  
+    } catch (error) {
+      console.error("Error getting document: ", error);
+    }
+  };
+
+  useEffect(() => {  
     fetchAvatar();
   }, [avatar]);
 
@@ -48,6 +50,7 @@ const SettingsScreen = () => {
   const uploadImage = async (uri) => {
     const response = await fetch(uri);
     const blob = await response.blob();
+    console.log(ref);
     const storageRef = ref(storage, `profile_pics/${new Date().getTime()}.jpg`);
 
     // Upload the image
@@ -67,19 +70,19 @@ const SettingsScreen = () => {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync();
-
+    console.log("result is ",result);
     if (!result.canceled) {
       const url = await uploadImage(result.assets[0].uri); // Upload the selected image
       setImageUrl(url); // Set the image URL
+      setAvatar(url);
       if (!avatar) {
         await addDoc(collection(db, "avatars"), {
-          userEmail,
-          imageUrl
+          email:userEmail,
+          avatar:url
         });
       } else {
-        await setDoc(newDocRef, { email: userEmail, avatarUrl: imageUrl });
+        await setDoc(newDocRef, { email: userEmail, avatarUrl: url });
       }
-      navigation.goBack();
     }
   };
 
