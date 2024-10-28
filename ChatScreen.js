@@ -12,7 +12,8 @@ import React, {
     query,
     onSnapshot,
     where,
-    getDocs
+    getDocs,
+    or
   } from 'firebase/firestore';
   import { signOut } from 'firebase/auth';
   import { auth, db } from './firebase';
@@ -68,48 +69,38 @@ import React, {
 
     useEffect(() => {
       const user = auth.currentUser.email;
-      
-      // Define two separate queries for received and sent messages
-      const receivedQuery = query(
-        collection(db, 'chats'),
-        where('receiver', '==', user),
-        orderBy('createdAt', 'desc')
-      );
   
-      const sentQuery = query(
+      // Assuming 'user1Id' and 'user2Id' are the IDs of the two users
+      const chatQuery = query(
         collection(db, 'chats'),
-        where('user._id', '==', user),
+        or(
+          where('user._id', '==', user),
+          where('receiver', '==', receiver),
+
+          where('user._id', '==', receiver),
+          where('receiver', '==', user)
+        ),
         orderBy('createdAt', 'desc')
-      );
-  
-      // Listen for real-time updates for both received and sent messages
-      const unsubscribeReceived = onSnapshot(receivedQuery, (receivedSnapshot) => {
-        const receivedMessages = receivedSnapshot.docs.map(doc => ({
+      );  
+      // Listen for real-time updates for the chatQuery
+      const unsubscribe = onSnapshot(chatQuery, (snapshot) => {
+        const combinedMessages = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
           createdAt: doc.data().createdAt.toDate() // Convert Firestore timestamp to JS Date
         }));
-        
-        const unsubscribeSent = onSnapshot(sentQuery, (sentSnapshot) => {
-          const sentMessages = sentSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: doc.data().createdAt.toDate()
-          }));
   
-          const combinedMessages = [...receivedMessages, ...sentMessages].sort(
-            (a, b) => b.createdAt - a.createdAt
-          );
+        // Sort messages by createdAt timestamp (desc)
+        combinedMessages.sort((a, b) => b.createdAt - a.createdAt);
   
-          setMessages(combinedMessages);
-        });
-  
-        // Cleanup both listeners when component unmounts or dependencies change
-        return () => {
-          unsubscribeReceived();
-          unsubscribeSent();
-        };
+        // Set the messages in state
+        setMessages(combinedMessages);
       });
+  
+      // Cleanup the listener when component unmounts or dependencies change
+      return () => {
+        unsubscribe();
+      };
     }, []);
     
     const onSend = useCallback((messages = []) => {
