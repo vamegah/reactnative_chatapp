@@ -3,7 +3,7 @@ import React, {
     useEffect,
     useCallback
   } from 'react';
-  import { Pressable, Text } from 'react-native';
+  import { Pressable, Text, View } from 'react-native';
   import { GiftedChat } from 'react-native-gifted-chat';
   import {
     collection,
@@ -21,14 +21,19 @@ import React, {
   import { AntDesign } from '@expo/vector-icons';
   import colors from './colors';
   import { useRoute } from '@react-navigation/native';
-
+  
   export default function ChatScreen() {
 
     const [messages, setMessages] = useState([]);
     const navigation = useNavigation();
     const [avatar,setAvatar] = useState(null);
+    const [receiver,setReceiever] = useState(null);
     const route = useRoute();
-    const {receiver} = route.params;
+    const [user,setUser] = useState(null);
+
+    if(route.params) {
+      setReceiever(route.params.receiver);
+    }
 
   const onSignOut = () => {
       signOut(auth).catch(error => console.log('Error logging out: ', error));
@@ -68,34 +73,34 @@ import React, {
       }, [navigation]);
 
     useEffect(() => {
-      const user = auth.currentUser.email;
+      setUser(auth.currentUser.email);
+      if(receiver) {
+        const chatQuery = query(
+          collection(db, 'chats'),
+          or(
+            where('user._id', '==', user),
+            where('receiver', '==', receiver),
   
-      // Assuming 'user1Id' and 'user2Id' are the IDs of the two users
-      const chatQuery = query(
-        collection(db, 'chats'),
-        or(
-          where('user._id', '==', user),
-          where('receiver', '==', receiver),
-
-          where('user._id', '==', receiver),
-          where('receiver', '==', user)
-        ),
-        orderBy('createdAt', 'desc')
-      );  
-      // Listen for real-time updates for the chatQuery
-      const unsubscribe = onSnapshot(chatQuery, (snapshot) => {
-        const combinedMessages = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt.toDate() // Convert Firestore timestamp to JS Date
-        }));
-  
-        // Sort messages by createdAt timestamp (desc)
-        combinedMessages.sort((a, b) => b.createdAt - a.createdAt);
-  
-        // Set the messages in state
-        setMessages(combinedMessages);
-      });
+            where('user._id', '==', receiver),
+            where('receiver', '==', user)
+          ),
+          orderBy('createdAt', 'desc')
+        );  
+        // Listen for real-time updates for the chatQuery
+        const unsubscribe = onSnapshot(chatQuery, (snapshot) => {
+          const combinedMessages = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt.toDate() // Convert Firestore timestamp to JS Date
+          }));
+    
+          // Sort messages by createdAt timestamp (desc)
+          combinedMessages.sort((a, b) => b.createdAt - a.createdAt);
+    
+          // Set the messages in state
+          setMessages(combinedMessages);
+        });  
+      }
   
       // Cleanup the listener when component unmounts or dependencies change
       return () => {
@@ -104,19 +109,22 @@ import React, {
     }, []);
     
     const onSend = useCallback((messages = []) => {
-        setMessages(previousMessages =>
-          GiftedChat.append(previousMessages, messages)
-        );
-        const { _id, createdAt, text, user } = messages[0];    
-        addDoc(collection(db, 'chats'), {
-          _id,
-          createdAt,
-          text,
-          user,
-          receiver
-        });
+        if(receiver) {
+          setMessages(previousMessages =>
+            GiftedChat.append(previousMessages, messages)
+          );
+          const { _id, createdAt, text, user } = messages[0];    
+          addDoc(collection(db, 'chats'), {
+            _id,
+            createdAt,
+            text,
+            user,
+            receiver
+          });
+        }
       }, []);
 
+      if(receiver){
       return (
         <GiftedChat
           messages={messages}
@@ -136,4 +144,15 @@ import React, {
           }}
         />
       );
+    } else {
+      return (
+        <View style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+          <Text style={{fontSize: 20, color: '#333',}}>No one to chat with yet!<br/> Did you choose one?</Text>
+        </View>
+      )
+    }
 }
