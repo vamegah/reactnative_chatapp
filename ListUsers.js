@@ -34,32 +34,44 @@ export const ListUsers = () => {
     fetchUsers();
   }, []);
 
-  return (
-    <View>
-      <FlatList
-        data={users}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => (
-			<View>
-          <Pressable style={styles.userContainer}
-            onPress={() =>
-              navigation.navigate('ChatScreen', { receiver: item.email })
-            }
-          >
+  if (users){
+    return (
+      <View>
+        <FlatList
+          data={users}
+          keyExtractor={item => item.id}
+          renderItem={({ item }) => (
+  			<View>
+            <Pressable style={styles.userContainer}
+              onPress={() =>
+                navigation.navigate('ChatScreen', { receiver: item.email })
+              }
+            >
 
-			<Image 
-      source={{ 
-      uri: item.avatar ? item.avatar : 'https://randomuser.me/api/portraits/lego/1.jpg' 
-      }} 
-      style={styles.avatar} 
-      />
-			<Text style={styles.username}>{item.email}</Text>
-          </Pressable>
-		  </View>
-        )}
-      />
-    </View>
-  );
+  			<Image 
+        source={{ 
+        uri: item.avatar ? item.avatar : 'https://randomuser.me/api/portraits/lego/1.jpg' 
+        }} 
+        style={styles.avatar} 
+        />
+  			<Text style={styles.username}>{item.email}</Text>
+            </Pressable>
+  		  </View>
+          )}
+        />
+      </View>
+    );
+  } else {
+    return (
+      <View style={{
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}>
+        <Text style={{fontSize: 20, color: '#333',}}>No buddies to load!</Text>
+      </View>
+    )
+  }
 };
 
 const styles = StyleSheet.create({
