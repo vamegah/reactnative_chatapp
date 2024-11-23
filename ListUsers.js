@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, FlatList, Image, StyleSheet } from 'react-native';
 import { getFirestore, collection, getDocs, query, where } from 'firebase/firestore';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
 
 export const ListUsers = () => {
