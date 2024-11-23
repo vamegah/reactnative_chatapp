@@ -8,7 +8,6 @@ import Toast from "react-native-toast-message";
 const SettingsScreen = () => {
   const [avatar, setAvatar] = useState(null);
   const [userEmail, setUserEmail] = useState('');
-  const [displayName, setDisplayName] = useState('');
   const [docRef, setDocRef] = useState(null);
 
   // Get the current authenticated user's email
@@ -37,9 +36,6 @@ const SettingsScreen = () => {
           if(docItem.data().avatar) {
             setAvatar(docItem.data().avatar);
           }
-          if(docItem.data().displayName) {
-            setDisplayName(docItem.data().displayName);
-          }
         });
       } else {
         console.log("No such document!");
@@ -64,7 +60,6 @@ const SettingsScreen = () => {
       await setDoc(docRef, 
                     { email: userEmail, 
                       avatar: avatar, 
-                      displayName: displayName 
                     });
     }
     Toast.show({
@@ -80,13 +75,6 @@ const SettingsScreen = () => {
     <View style={styles.container}>
       <Text style={styles.title}>Click on avatar, to change!</Text>
       <View style={{flexDirection:'row',margin:20}}>
-        <Text style={styles.label}>Display Name</Text>
-        <TextInput
-          style={styles.input}
-          placeholder={auth.currentUser.email}
-          value={displayName??""}
-          onChangeText={setDisplayName}
-        />
       </View>      
         <View style={styles.avatarContainer}>
           {avatar ? (
