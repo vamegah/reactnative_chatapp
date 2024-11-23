@@ -1,15 +1,15 @@
 // SettingsScreen.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, Alert, Pressable } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import { query, where, setDoc, collection, getDocs, addDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth, db, storage  } from './firebase';
+import { View, Text, TextInput, Image, StyleSheet, Alert, Pressable } from 'react-native';
+import { query, where, setDoc, collection, getDocs, addDoc,doc } from 'firebase/firestore';
+import { auth, db } from './firebase';
+import Toast from "react-native-toast-message";
 
 const SettingsScreen = () => {
   const [avatar, setAvatar] = useState(null);
   const [userEmail, setUserEmail] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [docRef, setDocRef] = useState(null);
 
   // Get the current authenticated user's email
   useEffect(() => {
@@ -29,9 +29,16 @@ const SettingsScreen = () => {
 
       // Check if the query returned any results
       if (!querySnapshot.empty) {
-        querySnapshot.forEach((doc) => {
-          if(doc.data().avatar) {
-            setAvatar(doc.data().avatar);
+        querySnapshot.forEach((docItem) => {
+          const docRef = doc(db, "avatars", docItem.id);
+          console.log(docRef);
+          setDocRef(docRef);
+
+          if(docItem.data().avatar) {
+            setAvatar(docItem.data().avatar);
+          }
+          if(docItem.data().displayName) {
+            setDisplayName(docItem.data().displayName);
           }
         });
       } else {
@@ -44,52 +51,43 @@ const SettingsScreen = () => {
 
   useEffect(() => {  
     fetchAvatar();
-  }, [avatar]);
+  }, []);
 
-  // Function to upload the image to Firebase Storage
-  const uploadImage = async (uri) => {
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    console.log(ref);
-    const storageRef = ref(storage, `profile_pics/${new Date().getTime()}.jpg`);
-
-    // Upload the image
-    await uploadBytes(storageRef, blob);
-    const url = await getDownloadURL(storageRef); // Get the download URL
-    return url; // Return the download URL
-  };
-
-  // Function to pick an image from the device's gallery
-  const pickImage = async () => {
-    // Request permission to access the gallery
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (permissionResult.granted === false) {
-      alert("Permission to access camera is required!");
-      return;
+  const saveChanges = async () => {
+    if (!docRef) {
+      await addDoc(collection(db, "avatars"), {
+        email:userEmail,
+        avatar:url,
+        displayName: displayName
+      });
+    } else {
+      await setDoc(docRef, 
+                    { email: userEmail, 
+                      avatar: avatar, 
+                      displayName: displayName 
+                    });
     }
-
-    const result = await ImagePicker.launchImageLibraryAsync();
-    console.log("result is ",result);
-    if (!result.canceled) {
-      const url = await uploadImage(result.assets[0].uri); // Upload the selected image
-      setImageUrl(url); // Set the image URL
-      setAvatar(url);
-      if (!avatar) {
-        await addDoc(collection(db, "avatars"), {
-          email:userEmail,
-          avatar:url
-        });
-      } else {
-        await setDoc(newDocRef, { email: userEmail, avatarUrl: url });
-      }
-    }
-  };
+    Toast.show({
+      type: "success",
+      text1: "Changes Saved",
+      text2: "Your changes have been saved 👋", // Subtitle
+      position: "top"
+    });
+    navigation.navigate('ListUsers')
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Settings</Text>
-      <Pressable onPress={pickImage}>
+      <Text style={styles.title}>Click on avatar, to change!</Text>
+      <View style={{flexDirection:'row',margin:20}}>
+        <Text style={styles.label}>Display Name</Text>
+        <TextInput
+          style={styles.input}
+          placeholder={auth.currentUser.email}
+          value={displayName??""}
+          onChangeText={setDisplayName}
+        />
+      </View>      
         <View style={styles.avatarContainer}>
           {avatar ? (
             <Image source={{ uri: avatar }} style={styles.avatar} />
@@ -97,9 +95,16 @@ const SettingsScreen = () => {
             <Text style={styles.avatarPlaceholder}>Upload Avatar</Text>
           )}
         </View>
-      </Pressable>
-      <Pressable style={styles.button} onPress={pickImage}>
-        <Text style={styles.buttonText}>Change Avatar</Text>
+        <Text style={styles.label}>Avatar URL</Text>
+        <TextInput
+          style={styles.input}
+          placeholder='Avatar URL'
+          value={avatar??""}
+          onChangeText={setAvatar}
+        />
+
+      <Pressable style={styles.button} onPress={saveChanges}>
+        <Text style={styles.buttonText}>Save Changes</Text>
       </Pressable>
     </View>
   );
@@ -111,6 +116,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
+    backgroundColor: '#ffe6ff'
   },
   title: {
     fontSize: 24,
@@ -147,6 +153,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  input: {
+    borderColor: '#ccc',
+    borderWidth: 1,
+    padding: 8,
+    marginTop: 5,
+    borderRadius: 5,
+    fontSize: 16
+  },
+  label: {
+    marginRight:10, 
+    padding: 8, 
+    marginTop: 5, 
+    fontSize:16
+  }
 });
 
 export default SettingsScreen;
