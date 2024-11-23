@@ -73,7 +73,7 @@ const SettingsScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Click on avatar, to change!</Text>
+      <Text style={styles.title}>Change the avatar!</Text>
       <View style={{flexDirection:'row',margin:20}}>
       </View>      
         <View style={styles.avatarContainer}>
